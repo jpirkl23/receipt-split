@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useReceiptStore } from "@/store";
-import { Steps, Card } from "@/components/Card";
+import { Steps } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { ReceiptUploadPage } from "./pages/ReceiptUploadPage";
 import { ReviewReceiptPage } from "./pages/ReviewReceiptPage";
