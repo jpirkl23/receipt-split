@@ -9,8 +9,6 @@ import { ReviewReceiptPage } from "./pages/ReviewReceiptPage";
 import { AssignItemsPage } from "./pages/AssignItemsPage";
 import { ResultsPage } from "./pages/ResultsPage";
 
-type Step = "upload" | "review" | "assign" | "results";
-
 const STEPS = ["Add Receipt", "Review Items", "Assign Items", "Results"];
 
 export default function Home() {
