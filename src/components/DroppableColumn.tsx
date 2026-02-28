@@ -1,6 +1,4 @@
 "use client";
-
-import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,

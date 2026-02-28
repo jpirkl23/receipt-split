@@ -1,6 +1,4 @@
 "use client";
-
-import React from "react";
 import { LineItem } from "@/types";
 import { Button } from "./Button";
 import { Input } from "./Input";

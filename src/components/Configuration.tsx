@@ -1,6 +1,4 @@
 "use client";
-
-import React from "react";
 import { TipConfig, TaxConfig } from "@/types";
 import { Input } from "./Input";
 import { Button } from "./Button";

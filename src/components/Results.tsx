@@ -1,6 +1,4 @@
 "use client";
-
-import React from "react";
 import { PersonBreakdown } from "@/types";
 import { Button } from "./Button";
 

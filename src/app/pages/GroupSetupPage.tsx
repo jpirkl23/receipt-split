@@ -1,6 +1,4 @@
 "use client";
-
-import React from "react";
 import { useReceiptStore } from "@/store";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
