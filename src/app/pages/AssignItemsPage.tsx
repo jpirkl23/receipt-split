@@ -119,16 +119,20 @@ export function AssignItemsPage() {
     const unitId = active.id as string;
     const personId = over.id as string;
 
-    // Extract base item ID (remove _unit suffix)
-    const baseItemId = unitId.split("_unit")[0];
+    // Extract base item ID and unit index from unitId (format: "itemId_unit0")
+    const [baseItemId, unitPart] = unitId.split("_unit");
+    const unitIndex = unitPart ? parseInt(unitPart, 10) : 0;
+
+    // Use unitId as the assignment key to track individual units
+    const assignmentId = `${baseItemId}#unit${unitIndex}`;
 
     // Check if dropping into unassigned area
     if (personId === "unassigned") {
-      unassignItem(baseItemId);
+      unassignItem(assignmentId);
     } else {
       // Check if it's a valid person
       if (people.some((p) => p.id === personId)) {
-        assignItemToPerson(baseItemId, personId);
+        assignItemToPerson(assignmentId, personId);
       }
     }
   };

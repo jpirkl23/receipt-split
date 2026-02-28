@@ -147,11 +147,13 @@ export const useReceiptStore = create<ReceiptStore>()(
             },
           };
         });
-        // Remove assignments
+        // Remove assignments for this item (both old and new format)
         set((state) => ({
           people: state.people.map((p) => ({
             ...p,
-            assignedItemIds: p.assignedItemIds.filter((id) => id !== itemId),
+            assignedItemIds: p.assignedItemIds.filter(
+              (id) => !id.startsWith(itemId + "#") && id !== itemId
+            ),
           })),
         }));
         get().calculateAndUpdateResults();
@@ -208,6 +210,7 @@ export const useReceiptStore = create<ReceiptStore>()(
           people: state.people.map((p) => {
             if (p.id === personId) {
               // Allow same item to be assigned to multiple people (for splitting)
+              // Support unit assignments like "itemId#unit0", "itemId#unit1"
               return {
                 ...p,
                 assignedItemIds: Array.from(
@@ -222,24 +225,24 @@ export const useReceiptStore = create<ReceiptStore>()(
         get().calculateAndUpdateResults();
       },
 
-      unassignItem: (itemId: string) => {
+      unassignItem: (assignmentId: string) => {
         set((state) => ({
           people: state.people.map((p) => ({
             ...p,
-            assignedItemIds: p.assignedItemIds.filter((id) => id !== itemId),
+            assignedItemIds: p.assignedItemIds.filter((id) => id !== assignmentId),
           })),
         }));
         get().calculateAndUpdateResults();
       },
 
-      unassignItemFromPerson: (itemId: string, personId: string) => {
+      unassignItemFromPerson: (assignmentId: string, personId: string) => {
         set((state) => ({
           people: state.people.map((p) =>
             p.id === personId
               ? {
                   ...p,
                   assignedItemIds: p.assignedItemIds.filter(
-                    (id) => id !== itemId
+                    (id) => id !== assignmentId
                   ),
                 }
               : p
@@ -252,20 +255,84 @@ export const useReceiptStore = create<ReceiptStore>()(
         const state = get();
         const person = state.people.find((p) => p.id === personId);
         if (!state.receipt || !person) return [];
-        return person.assignedItemIds
-          .map((id) => state.receipt!.lineItems.find((item) => item.id === id))
-          .filter((item): item is LineItem => item !== undefined);
+
+        // Group assigned units by base item ID
+        const assignedByItem = new Map<string, number[]>();
+        person.assignedItemIds.forEach((assignmentId) => {
+          if (assignmentId.includes("#unit")) {
+            // Unit-based assignment: "itemId#unit0"
+            const [itemId, unitPart] = assignmentId.split("#unit");
+            const unitIndex = parseInt(unitPart, 10);
+            if (!assignedByItem.has(itemId)) {
+              assignedByItem.set(itemId, []);
+            }
+            assignedByItem.get(itemId)!.push(unitIndex);
+          } else {
+            // Legacy: full item assignment
+            if (!assignedByItem.has(assignmentId)) {
+              assignedByItem.set(assignmentId, []);
+            }
+            assignedByItem.get(assignmentId)!.push(-1); // -1 means full item
+          }
+        });
+
+        // Convert back to LineItems with correct quantities
+        const result: LineItem[] = [];
+        assignedByItem.forEach((unitIndices, itemId) => {
+          const baseItem = state.receipt!.lineItems.find((item) => item.id === itemId);
+          if (!baseItem) return;
+
+          // If full item (-1), use entire item
+          if (unitIndices.includes(-1)) {
+            result.push(baseItem);
+          } else {
+            // Create item with quantity = number of assigned units
+            result.push({
+              ...baseItem,
+              quantity: unitIndices.length,
+              lineTotal: (baseItem.unitPrice || 0) * unitIndices.length,
+            });
+          }
+        });
+
+        return result;
       },
 
       getUnassignedItems: () => {
         const state = get();
         if (!state.receipt) return [];
-        const assignedIds = new Set(
-          state.people.flatMap((p) => p.assignedItemIds)
-        );
-        return state.receipt.lineItems.filter(
-          (item) => !assignedIds.has(item.id)
-        );
+
+        // Count assigned units per item
+        const assignedUnitCounts = new Map<string, number>();
+        state.people.forEach((person) => {
+          person.assignedItemIds.forEach((assignmentId) => {
+            if (assignmentId.includes("#unit")) {
+              const [itemId] = assignmentId.split("#unit");
+              assignedUnitCounts.set(itemId, (assignedUnitCounts.get(itemId) || 0) + 1);
+            } else {
+              // Legacy full item assignment counts as all units
+              const item = state.receipt!.lineItems.find((i) => i.id === assignmentId);
+              if (item) {
+                assignedUnitCounts.set(assignmentId, item.quantity);
+              }
+            }
+          });
+        });
+
+        // Return items with unassigned units, adjusting quantity if partially assigned
+        return state.receipt.lineItems
+          .map((item) => {
+            const assignedUnits = assignedUnitCounts.get(item.id) || 0;
+            const unassignedUnits = Math.max(0, item.quantity - assignedUnits);
+            return unassignedUnits > 0
+              ? {
+                  ...item,
+                  quantity: unassignedUnits,
+                  lineTotal: (item.unitPrice || 0) * unassignedUnits,
+                }
+              : null;
+          })
+          .filter((item): item is LineItem => item !== null);
       },
 
       setTipConfig: (config: TipConfig) => {
