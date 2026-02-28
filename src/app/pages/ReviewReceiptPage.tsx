@@ -141,7 +141,7 @@ export function ReviewReceiptPage({ onContinue }: ReviewReceiptPageProps) {
             <div className="mb-6 p-4 bg-green-50 rounded-lg border-l-4 border-green-400 space-y-4">
               <h3 className="font-semibold text-gray-800">Subtotal (Pre-filled from OCR)</h3>
               <p className="text-sm text-gray-600">
-                Edit the subtotal if the OCR didn't detect it correctly. This should match the receipt subtotal before tax and tip.
+                Edit the subtotal if the OCR didn&apos;t detect it correctly. This should match the receipt subtotal before tax and tip.
               </p>
               <Input
                 label="Subtotal ($)"

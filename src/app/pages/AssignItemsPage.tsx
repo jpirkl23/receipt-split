@@ -15,6 +15,10 @@ import { arrayMove, sortableKeyboardCoordinates, SortableContext, verticalListSo
 import { useReceiptStore } from "@/store";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
+import { GroupSetup } from "@/components/GroupSetup";
+import { DroppableColumn } from "@/components/DroppableColumn";
+import { DraggableItem } from "@/components/DraggableItem";
+import { LineItem } from "@/types";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
