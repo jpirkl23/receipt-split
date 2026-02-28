@@ -64,6 +64,7 @@ export function calculateTip(
 /**
  * Gets the pretax subtotal of assigned items for a person
  * Handles item splitting when an item is assigned to multiple people
+ * Supports both new unit-based assignments (itemId#unit0) and legacy full-item assignments
  */
 export function getPersonPretaxSubtotal(
   person: Person,
@@ -72,14 +73,23 @@ export function getPersonPretaxSubtotal(
 ): number {
   return roundToCents(
     person.assignedItemIds
-      .map((id) => {
-        const item = allLineItems.find((item) => item.id === id);
+      .map((assignmentId) => {
+        // Extract base item ID (handle both "itemId" and "itemId#unit0" formats)
+        const baseItemId = assignmentId.includes("#unit") 
+          ? assignmentId.split("#unit")[0] 
+          : assignmentId;
+        
+        const item = allLineItems.find((item) => item.id === baseItemId);
         if (!item) return 0;
         
         // If allPeople provided, split items among people who have them
         if (allPeople) {
+          // Count how many people have this item (in any unit assignment)
           const peopleWithItem = allPeople.filter((p) =>
-            p.assignedItemIds.includes(id)
+            p.assignedItemIds.some((id) => 
+              id === assignmentId || 
+              id.split("#unit")[0] === baseItemId
+            )
           ).length;
           return peopleWithItem > 0 ? item.lineTotal / peopleWithItem : 0;
         }
@@ -234,7 +244,14 @@ export function calculateResults(
 
   // Build person breakdowns
   const personBreakdowns: PersonBreakdown[] = people.map((person) => {
-    const assignedItems = person.assignedItemIds
+    // Extract unique base item IDs, handling both unit-based and legacy formats
+    const uniqueItemIds = Array.from(new Set(
+      person.assignedItemIds.map((assignmentId) =>
+        assignmentId.includes("#unit") ? assignmentId.split("#unit")[0] : assignmentId
+      )
+    ));
+
+    const assignedItems = uniqueItemIds
       .map((id) => receipt.lineItems.find((item) => item.id === id))
       .filter((item): item is LineItem => item !== undefined);
 
